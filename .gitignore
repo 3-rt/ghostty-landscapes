@@ -1,0 +1,13 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+collection/build/
+collection/scenes/*/base.png
+collection/scenes/*/layers.json
+collection/scenes/*/scene.template.glsl
+collection/scenes/rain/coverage.glsl
+collection/scenes/rain/reference.html
+collection/scenes/rain/preview.png
+.no-mistakes/
