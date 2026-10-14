@@ -111,6 +111,33 @@ class BackgroundTest(unittest.TestCase):
         self.assertEqual(before, self.config.read_text())
         self.assertFalse(list((self.root / 'shaders').glob('*.glsl')))
 
+    def manually_remove_collection(self):
+        text = re.sub(r'^custom-shader = .*ghost-bg-.*\n', '', self.config.read_text(), flags=re.M)
+        text = re.sub(r'^background-image-fit = .*$', 'background-image-fit = contain', text, flags=re.M)
+        text = re.sub(r'^background-image-position = .*$', 'background-image-position = bottom-right', text, flags=re.M)
+        text += 'custom-shader-animation = false\n'
+        self.config.write_text(text)
+
+    def test_reactivation_snapshots_new_manual_settings(self):
+        self.run_cli('use', 'rain')
+        self.manually_remove_collection()
+        self.run_cli('use', 'moon')
+        self.run_cli('off')
+        text = self.config.read_text()
+        self.assertIn('background-image-fit = contain', text)
+        self.assertIn('background-image-position = bottom-right', text)
+        self.assertIn('custom-shader-animation = false', text)
+        self.assertFalse((self.root / '.ghost-bg-state.json').exists())
+
+    def test_off_discards_stale_state_without_restoring_it(self):
+        self.run_cli('use', 'rain')
+        self.manually_remove_collection()
+        text = re.sub(r'^background-image = .*$', 'background-image = ', self.config.read_text(), flags=re.M)
+        self.config.write_text(text)
+        self.run_cli('off')
+        self.assertEqual(self.config.read_text(), text)
+        self.assertFalse((self.root / '.ghost-bg-state.json').exists())
+
     def test_failed_strength_update_rolls_back(self):
         self.run_cli('use', 'rain')
         old = self.shader()

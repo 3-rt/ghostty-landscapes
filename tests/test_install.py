@@ -57,3 +57,27 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(cli.read_text(), 'old cli')
         self.assertFalse((self.config / '.ghost-bg-state.json').exists())
         self.assertFalse((self.config / 'shaders').exists())
+
+    def test_symlinked_destinations_rejected_before_mutation(self):
+        target = self.root / 'actual-library'
+        target.mkdir()
+        old = b'{"previous": {"file": "old.png"}}\n'
+        (target / 'catalog.json').write_bytes(old)
+        library = self.config / 'backgrounds'
+        library.symlink_to(target, target_is_directory=True)
+        with patch.object(installer.subprocess, 'run') as validate:
+            with self.assertRaisesRegex(ValueError, 'symlink'):
+                installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
+            validate.assert_not_called()
+        self.assertTrue(library.is_symlink())
+        self.assertEqual((target / 'catalog.json').read_bytes(), old)
+        self.assertEqual(set(target.iterdir()), {target / 'catalog.json'})
+        self.assertEqual((self.config / 'config').read_bytes(), self.original)
+        self.assertFalse((self.root / 'data').exists())
+        library.unlink()
+        library.mkdir()
+        (library / 'catalog.json').symlink_to(target / 'catalog.json')
+        with self.assertRaisesRegex(ValueError, 'symlink'):
+            installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
+        self.assertEqual((target / 'catalog.json').read_bytes(), old)
+        self.assertEqual((self.config / 'config').read_bytes(), self.original)

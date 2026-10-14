@@ -4,6 +4,8 @@ Ten quiet landscapes that move behind your terminal: rain over a riverside city,
 
 The illustrations use tiny punctuation-like marks. They are raster artwork with an ASCII aesthetic, not a selectable text grid. Animation runs in native Ghostty shaders; buildings and reflected scenery stay anchored while independent scene layers move.
 
+![Rainy city animation in the review gallery](docs/rain-motion.gif)
+
 ![Coastline at terminal strength](docs/coast.png)
 
 ## The collection
@@ -55,6 +57,8 @@ python3 install.py
 
 The installer copies the built assets, installs `ghost-bg` in `~/.local/bin`, selects animated rain, and preserves unrelated Ghostty settings. Add that bin directory to your PATH if needed. Press **Cmd+Shift+,** in Ghostty to reload.
 
+Existing managed destinations must be ordinary files and directories. The installer rejects symlinks before changing files, so a failed install cannot overwrite their external targets. Use the directory options below for a separate installation if needed.
+
 ```sh
 ghost-bg                 # interactive picker
 ghost-bg use windmill    # select a scene
@@ -87,6 +91,8 @@ npm run check:native   # GLSL -> SPIR-V -> Metal; render every scene offscreen
 ```
 
 Checks cover independent effects, fixed scenery, loop closure and nearby seam frames, landscape/portrait crops, text-pixel and alpha preservation, opacity mismatch, scene selection, strength changes, aliases, rollback, and unrelated custom shaders. GitHub Actions runs the browser, CLI, installer, and native checks on macOS.
+
+The build renders complete scene previews and embeds the same images in the gallery and installed picker. Checks write separate evidence images and verify that installation artifacts stay unchanged.
 
 Edit `collection/scenes.cjs` for scene geometry and timing, `collection/shader.cjs` for shared effects, and `collection/artwork.cjs` for layer preparation. Rain's original preparation lives in `shader/build-rain.cjs` and its scene folder. Build outputs and generated templates are ignored by Git; rebuild them rather than editing them.
 

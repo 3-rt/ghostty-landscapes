@@ -66,6 +66,15 @@ def install(config_dir, data_dir, bin_dir, scene):
         runtime,
         cli,
     ]
+    # Following an existing link could mutate files outside the rollback snapshot.
+    # Refuse before staging or touching any installation destination.
+    for destination in destinations:
+        candidates = [destination]
+        if destination.is_dir() and not destination.is_symlink():
+            candidates.extend(destination.rglob('*'))
+        linked = next((path for path in candidates if path.is_symlink()), None)
+        if linked is not None:
+            raise ValueError(f'Installation destination contains a symlink: {linked}. Choose ordinary directories and files with --config-dir, --data-dir, and --bin-dir.')
     with tempfile.TemporaryDirectory(prefix='ghost-bg-install-') as temporary:
         stage = Path(temporary) / 'stage'
         staged_library = stage / 'backgrounds'

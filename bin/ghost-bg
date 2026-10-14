@@ -109,12 +109,13 @@ def update(changes, animated=None):
     target = CONFIG.resolve()
     before = target.read_text()
     original_state = STATE.read_bytes() if STATE.exists() else None
-    state = json.loads(original_state) if original_state is not None else None
+    owns_settings = any(managed_shader_line(line) for line in before.splitlines())
+    state = json.loads(original_state) if original_state is not None and owns_settings else None
     save_state = animated is True and state is None
-    clear_state = animated is False and state is not None
+    clear_state = animated is False and original_state is not None
     if save_state:
         state = {key: setting_state(before, key) for key in MANAGED_SETTINGS}
-    if clear_state:
+    if clear_state and state is not None:
         changes = dict(changes)
         for key, saved in state.items():
             changes[key] = saved["value"] if saved["present"] else None
@@ -170,7 +171,7 @@ def update(changes, animated=None):
         lines = [line for line in lines if not managed_shader_line(line)]
         lines.append(f"custom-shader = {shader_path}")
         after = "\n".join(lines) + "\n"
-    if after == before and (
+    if after == before and not (save_state or clear_state) and (
         shader_text is None
         or (shader_path.exists() and shader_path.read_text() == shader_text)
     ):
