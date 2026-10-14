@@ -1,0 +1,46 @@
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+PROJECT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location('installer', PROJECT / 'install.py')
+installer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(installer)
+
+class InstallTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.config = self.root / 'config'
+        self.config.mkdir()
+        self.original = (PROJECT / 'tests/fixtures/config').read_bytes()
+        (self.config / 'config').write_bytes(self.original)
+
+    def test_install_then_use_different_scene(self):
+        installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
+        catalog = json.loads((self.config / 'backgrounds/catalog.json').read_text())
+        self.assertEqual(len(catalog), 10)
+        self.assertTrue(all(item['animated'] for item in catalog.values()))
+        self.assertTrue(all(Path(item['shader_template']).is_file() for item in catalog.values()))
+        env = dict(os.environ, GHOST_BG_DIR=str(self.config), GHOST_BG_DATA_DIR=str(self.root / 'data'))
+        result = subprocess.run([str(self.root / 'bin/ghost-bg'), 'use', 'windmill'], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(catalog['windmill']['file'], (self.config / 'config').read_text())
+        self.assertIn('font-size = 15', (self.config / 'config').read_text())
+
+    def test_failed_validation_restores_existing_config_and_catalog(self):
+        lib = self.config / 'backgrounds'
+        lib.mkdir()
+        old = b'{"previous": {"file": "old.png"}}\n'
+        (lib / 'catalog.json').write_bytes(old)
+        with patch.object(installer.subprocess, 'run', return_value=subprocess.CompletedProcess([], 1)):
+            with self.assertRaises(RuntimeError):
+                installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
+        self.assertEqual((self.config / 'config').read_bytes(), self.original)
+        self.assertEqual((lib / 'catalog.json').read_bytes(), old)

@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY both clouds and their dotted wisps and the FOUR WINDMILL SAILS (the long crossed blades) around the hub near x=1353,y=520. Keep the central hub, reconstruct the small tower/roof behind the removed blades in exactly the existing typewriter-mark style. Preserve tower, path, fence, fields, hill contours, trees and every ground mark exactly aligned. Clouds leave clean dark sky. Do not erase tower roof or entire windmill; only the rotating four crossed blades disappear. Preserve original full 1672x941 framing, positions, colors, crisp tiny disconnected typewriter punctuation illustration and original dimensions. No restyling, new objects, labels, watermark, crop, subject resizing, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in the original style. Opaque background.",
+  "original": "original.png",
+  "preparation": {
+    "canvas": [
+      1672,
+      941
+    ],
+    "method": "Reference-guided clean plate; original moving marks extracted into 4-bit coverage; compositing limited to owned effect pixels",
+    "protected_original_pixels": 1298044,
+    "removed_particle_regions": 0
+  },
+  "source_record": "provenance.json"
+}

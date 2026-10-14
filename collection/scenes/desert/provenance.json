@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY the two low clouds with their horizontal dotted wisps, and ONLY the frond crowns on the two tiny oasis palms on the right. Keep both palm trunks exactly positioned with their tips intact. Preserve ALL sand dune contours and dotted sand patterns, sun outline, horizon, oasis and reflections exactly aligned. Clouds leave clean dark purple sky. Palm crowns leave the existing dark sky without changing the surrounding dune. Preserve original full 1672x941 framing, positions, colors, crisp tiny disconnected typewriter punctuation illustration and original dimensions. No restyling, new objects, labels, watermark, crop, subject resizing, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in the original style. Opaque background.",
+  "original": "original.png",
+  "preparation": {
+    "canvas": [
+      1672,
+      941
+    ],
+    "method": "Reference-guided clean plate; original moving marks extracted into 4-bit coverage; compositing limited to owned effect pixels",
+    "protected_original_pixels": 1431388,
+    "removed_particle_regions": 0
+  },
+  "source_record": "provenance.json"
+}
