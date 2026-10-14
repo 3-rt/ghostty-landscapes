@@ -49,6 +49,11 @@ def restore(saved):
             shutil.copy2(copy, path, follow_symlinks=False)
 
 def install(config_dir, data_dir, bin_dir, scene):
+    roots = tuple(Path(path).expanduser() for path in (config_dir, data_dir, bin_dir))
+    linked_root = next((path for path in roots if path.is_symlink()), None)
+    if linked_root is not None:
+        raise ValueError(f'Installation destination contains a symlink: {linked_root}. Choose ordinary directories and files with --config-dir, --data-dir, and --bin-dir.')
+    config_dir, data_dir, bin_dir = (path.resolve() for path in roots)
     build = PROJECT / 'collection/build'
     catalog = json.loads((build / 'catalog.json').read_text())
     if scene not in catalog:
@@ -127,4 +132,4 @@ if __name__ == '__main__':
     parser.add_argument('--bin-dir', type=Path, default=Path.home() / '.local/bin')
     parser.add_argument('--scene', default='rain')
     args = parser.parse_args()
-    install(args.config_dir.expanduser().resolve(), args.data_dir.expanduser().resolve(), args.bin_dir.expanduser().resolve(), args.scene)
+    install(args.config_dir, args.data_dir, args.bin_dir, args.scene)

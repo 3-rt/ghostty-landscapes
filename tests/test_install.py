@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -21,6 +22,38 @@ class InstallTest(unittest.TestCase):
         self.config.mkdir()
         self.original = (PROJECT / 'tests/fixtures/config').read_bytes()
         (self.config / 'config').write_bytes(self.original)
+
+    def root_link_case(self, name, entrypoint):
+        case = self.root / f'{entrypoint}-{name}'
+        case.mkdir()
+        roots = {}
+        for root_name in ('config', 'data', 'bin'):
+            target = case / f'actual-{root_name}'
+            target.mkdir()
+            (target / 'marker').write_text(root_name)
+            root = case / root_name
+            if root_name == name:
+                root.symlink_to(target, target_is_directory=True)
+            else:
+                root.mkdir()
+                (root / 'marker').write_text(root_name)
+            roots[root_name] = root
+        config = roots['config'] / 'config'
+        if not config.exists():
+            config.write_bytes(self.original)
+        return case, roots
+
+    def tree_state(self, root):
+        state = []
+        for path in sorted(root.rglob('*')):
+            relative = str(path.relative_to(root))
+            if path.is_symlink():
+                state.append((relative, 'symlink', os.readlink(path)))
+            elif path.is_file():
+                state.append((relative, 'file', path.read_bytes()))
+            else:
+                state.append((relative, 'directory', None))
+        return state
 
     def test_install_then_use_different_scene(self):
         installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
@@ -81,3 +114,30 @@ class InstallTest(unittest.TestCase):
             installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
         self.assertEqual((target / 'catalog.json').read_bytes(), old)
         self.assertEqual((self.config / 'config').read_bytes(), self.original)
+
+    def test_symlinked_roots_rejected_by_install_before_mutation(self):
+        for name in ('config', 'data', 'bin'):
+            with self.subTest(name=name):
+                case, roots = self.root_link_case(name, 'install')
+                before = self.tree_state(case)
+                with patch.object(installer.subprocess, 'run') as validate:
+                    with self.assertRaisesRegex(ValueError, 'symlink'):
+                        installer.install(roots['config'], roots['data'], roots['bin'], 'rain')
+                    validate.assert_not_called()
+                self.assertEqual(self.tree_state(case), before)
+
+    def test_symlinked_roots_rejected_by_cli_before_mutation(self):
+        for name in ('config', 'data', 'bin'):
+            with self.subTest(name=name):
+                case, roots = self.root_link_case(name, 'cli')
+                before = self.tree_state(case)
+                result = subprocess.run([
+                    sys.executable,
+                    str(PROJECT / 'install.py'),
+                    '--config-dir', str(roots['config']),
+                    '--data-dir', str(roots['data']),
+                    '--bin-dir', str(roots['bin']),
+                ], capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('symlink', result.stderr)
+                self.assertEqual(self.tree_state(case), before)
