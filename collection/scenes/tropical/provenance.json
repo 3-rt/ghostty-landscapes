@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY both clouds and their dotted wisps; the tiny sailboat and immediate reflection near x=380,y=610; the palm FROND CROWNS of the three palms on the right, keeping trunks and crown attachment points intact; and free horizontal surface-ripple marks in the sea. Preserve island, beach, shoreline, trunks, rocks, sand and stationary shoreline/palm reflections exactly aligned. No free horizontal ripples remain in open sea; retain stationary vertical scenery reflections. Preserve original full 1672x941 framing, positions, colors, crisp tiny disconnected typewriter punctuation illustration and original dimensions. No restyling, new objects, labels, watermark, crop, subject resizing, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in the original style. Opaque background.",
+  "original": "original.png",
+  "preparation": {
+    "canvas": [
+      1672,
+      941
+    ],
+    "method": "Reference-guided clean plate; original moving marks extracted into 4-bit coverage; compositing limited to owned effect pixels",
+    "protected_original_pixels": 1321606,
+    "removed_particle_regions": 0
+  },
+  "source_record": "provenance.json"
+}

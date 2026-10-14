@@ -1,0 +1,24 @@
+name: Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  collection:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: brew install fzf chafa glslang spirv-cross
+      - run: brew install --cask ghostty
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: python3 -m pip install -r requirements.txt
+      - run: npm run build
+      - run: npm test
+      - run: npm run check:native

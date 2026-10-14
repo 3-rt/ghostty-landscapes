@@ -1,0 +1,15 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY all isolated falling and floating leaf shapes across sky and river and the free horizontal surface-ripple strokes in the river. Preserve ALL trees, bridge, hills, bank contours, rocks and stationary vertical reflected scenery. Sky retains its isolated tiny background punctuation dots but has no leaf shapes. River retains tree and bridge reflections but no leaves or free horizontal water ripple lines. Preserve original full 1672x941 framing, positions, colors, crisp tiny disconnected typewriter punctuation illustration and original dimensions. No restyling, new objects, labels, watermark, crop, subject resizing, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in the original style. Opaque background.",
+  "original": "original.png",
+  "preparation": {
+    "canvas": [
+      1672,
+      941
+    ],
+    "method": "Reference-guided clean plate; original moving marks extracted into 4-bit coverage; compositing limited to owned effect pixels",
+    "protected_original_pixels": 1537173,
+    "removed_particle_regions": 52
+  },
+  "source_record": "provenance.json"
+}

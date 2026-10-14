@@ -1,0 +1,15 @@
+{
+  "name": "ghostty-landscapes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ten independently animated illustrated landscapes for Ghostty",
+  "scripts": {
+    "build": "node shader/build-rain.cjs && node collection/prepare.cjs && node collection/build.cjs",
+    "check:syntax": "python3 -m compileall -q bin/ghost-bg install.py tests && for file in collection/*.cjs collection/gallery.js shader/*.cjs; do node --check \"$file\" || exit; done",
+    "check": "node collection/check.cjs",
+    "test": "npm run check:syntax && npm run check && python3 -m unittest discover -s tests",
+    "check:native": "node collection/check-native.cjs",
+    "install:ghostty": "python3 install.py"
+  },
+  "devDependencies": {"playwright": "1.64.0"}
+}

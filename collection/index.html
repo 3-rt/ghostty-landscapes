@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ghostty - living landscapes</title><link rel="stylesheet" href="gallery.css"></head>
+<body><header class="masthead"><a href="#" class="brand">Ghostty <span>/ living landscapes</span></a><span class="edition">TEN SCENES · ONE QUIET WINDOW</span></header>
+<main><aside><p class="eyebrow">THE COLLECTION</p><nav id="scenes" aria-label="Choose a background"></nav><p class="aside-note">A little weather.<br>A little movement.<br>Room to think.</p></aside>
+<section class="workspace"><div class="scene-heading"><div><p class="eyebrow" id="scene-number">01 / 10</p><h1 id="title">Coastline</h1><p id="description"></p></div><button id="compare" aria-pressed="false">Compare scenes</button></div>
+<div id="stages"><article class="stage"><div class="stage-top"><span id="primary-label">Coastline</span><span>~/projects</span></div><div class="viewport"><canvas id="primary" aria-label="Animated background preview"></canvas><pre class="terminal-text">basil ~/projects % git status
+
+On branch main
+Your working tree is clean.
+
+▍</pre></div></article><article class="stage comparison" hidden><div class="stage-top"><label for="second">Compare with</label><select id="second"></select></div><div class="viewport"><canvas id="secondary" aria-label="Second animated background preview"></canvas><pre class="terminal-text">basil ~/projects % git status
+
+On branch main
+Your working tree is clean.
+
+▍</pre></div></article></div>
+<div class="transport"><button id="play">Pause</button><button id="restart">Restart</button><label class="scrubber" for="time"><span class="sr-only">Animation time</span><input id="time" type="range" min="0" max="192" value="0" step="0.05"><output id="time-value">0.0 / 192 s</output></label></div>
+<div class="options"><label class="strength" for="strength">Artwork strength <input id="strength" type="range" min="0" max="100" value="18"><output id="strength-value">18%</output></label><button id="terminal-strength">Terminal: 18%</button><label><input type="checkbox" id="text" checked> Sample text</label><label>Window shape <select id="shape"><option value="landscape">Landscape</option><option value="portrait">Narrow</option></select></label></div>
+<div class="effects"><p class="eyebrow">MOTION LAYERS</p><div id="effect-controls"></div></div><p id="status" role="status"></p></section></main>
+<footer><span>Fine marks. Fixed scenery. Independent motion.</span><span>192-second seamless cycles</span></footer>
+<script src="build/gallery-data.js"></script><script src="gallery.js"></script></body></html>
