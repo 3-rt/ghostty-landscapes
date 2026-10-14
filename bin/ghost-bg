@@ -23,9 +23,11 @@ LIBRARY = ROOT / "backgrounds"
 GHOSTTY = os.environ.get("GHOSTTY_BIN") or shutil.which("ghostty") or "/Applications/Ghostty.app/Contents/MacOS/ghostty"
 SELF = str(Path(__file__).resolve())
 MANAGED_SHADER = ROOT / "shaders/ghost-bg-city.glsl"
+STATE = ROOT / ".ghost-bg-state.json"
 DATA_DIR = Path(os.environ.get("GHOST_BG_DATA_DIR", str(Path.home() / ".local/share/ghost-bg"))).expanduser()
 COLLECTION = DATA_DIR / "collection/index.html"
 SCENE_NAMES = {"coast", "lake", "garden", "winter", "autumn", "rain", "desert", "tropical", "moon", "windmill", "city"}
+MANAGED_SETTINGS = ("background-image-fit", "background-image-position", "custom-shader-animation")
 
 
 def catalog():
@@ -67,7 +69,28 @@ def status():
 
 def background_changes(name):
     item, path = entry(name)
-    return {"background-image": str(path)}, bool(item.get("animated"))
+    return {
+        "background-image": str(path),
+        "background-image-fit": "cover",
+        "background-image-position": "center",
+    }, bool(item.get("animated"))
+
+
+def setting_state(text, key):
+    matches = re.findall(r"^\s*" + re.escape(key) + r"\s*=\s*(.*?)\s*$", text, re.M)
+    return {"present": bool(matches), "value": matches[-1] if matches else ""}
+
+
+def write_state(state):
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=".ghost-bg-state-", dir=STATE.parent)
+    try:
+        with os.fdopen(fd, "w") as output:
+            json.dump(state, output, indent=2)
+            output.write("\n")
+        os.replace(temporary, STATE)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 
 def managed_shader_line(line):
@@ -85,6 +108,16 @@ def managed_shader_line(line):
 def update(changes, animated=None):
     target = CONFIG.resolve()
     before = target.read_text()
+    original_state = STATE.read_bytes() if STATE.exists() else None
+    state = json.loads(original_state) if original_state is not None else None
+    save_state = animated is True and state is None
+    clear_state = animated is False and state is not None
+    if save_state:
+        state = {key: setting_state(before, key) for key in MANAGED_SETTINGS}
+    if clear_state:
+        changes = dict(changes)
+        for key, saved in state.items():
+            changes[key] = saved["value"] if saved["present"] else None
     remaining = dict(changes)
     lines = []
     for line in before.splitlines():
@@ -93,10 +126,12 @@ def update(changes, animated=None):
         key = line.split("=", 1)[0].strip() if "=" in line else ""
         if key in changes:
             if key in remaining:
-                lines.append(f"{key} = {remaining.pop(key)}")
+                value = remaining.pop(key)
+                if value is not None:
+                    lines.append(f"{key} = {value}")
         else:
             lines.append(line)
-    lines.extend(f"{k} = {v}" for k, v in remaining.items())
+    lines.extend(f"{k} = {v}" for k, v in remaining.items() if v is not None)
     if animated:
         lines.append(f"custom-shader = {MANAGED_SHADER}")
         if setting(before, "custom-shader-animation", "true") == "false":
@@ -179,6 +214,10 @@ def update(changes, animated=None):
         if target.read_text() != before:
             raise ValueError("Config changed while saving. Please retry.")
         shutil.copy2(target, target.with_name("config.before-ghost-bg"))
+        if save_state:
+            write_state(state)
+        elif clear_state:
+            STATE.unlink(missing_ok=True)
         os.replace(temporary, target)
         committed = True
     finally:
@@ -187,6 +226,11 @@ def update(changes, animated=None):
                 shader_path.unlink(missing_ok=True)
             else:
                 shader_path.write_bytes(old_shader)
+        if not committed:
+            if original_state is None:
+                STATE.unlink(missing_ok=True)
+            else:
+                STATE.write_bytes(original_state)
         Path(temporary).unlink(missing_ok=True)
     print("Saved. Press Cmd+Shift+, in Ghostty to apply to all windows.")
 

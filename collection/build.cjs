@@ -7,10 +7,11 @@ for(const [id,scene] of Object.entries(scenes)){
  const basePath=path.join(dir,'base.png');
  const bytes=fs.readFileSync(basePath),digest=crypto.createHash('sha256').update(bytes).digest('hex').slice(0,12),filename=`ghost-bg-${id}-${digest}.png`;
  fs.writeFileSync(path.join(out,filename),bytes);fs.writeFileSync(path.join(dir,'scene.template.glsl'),template);
+ fs.writeFileSync(path.join(out,id+'-preview.png'),bytes);
  fs.writeFileSync(path.join(out,`${id}.frag`),fs.readFileSync(path.join(__dirname,'../shader/ghostty-prefix.glsl'),'utf8')+'\nconst float STRENGTH=.18;const float BG_ALPHA=.8;\n'+template);
  const preview=shader.preview(body);
  const thumbnailPath=path.join(out,id+'-preview.png');
- manifest.scenes.push({id,title:scene.title,description:scene.description,effects,base_file:filename,base_url:'data:image/png;base64,'+bytes.toString('base64'),thumbnail:fs.existsSync(thumbnailPath)?'data:image/png;base64,'+fs.readFileSync(thumbnailPath).toString('base64'):undefined,shader:preview.source,atlas:preview.atlas});
+ manifest.scenes.push({id,title:scene.title,description:scene.description,effects,base_file:filename,base_url:'data:image/png;base64,'+bytes.toString('base64'),thumbnail:'data:image/png;base64,'+fs.readFileSync(thumbnailPath).toString('base64'),shader:preview.source,atlas:preview.atlas});
  console.log(`${id}: ${(Buffer.byteLength(template)/1024).toFixed(0)} KiB shader; ${effects.join(', ')}`);
 }
 fs.writeFileSync(path.join(out,'gallery-data.js'),'window.GHOST_COLLECTION='+JSON.stringify(manifest)+';\n');

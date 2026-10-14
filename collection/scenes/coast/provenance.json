@@ -2,7 +2,7 @@
   "tool": "built-in image_gen",
   "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY the two cloud groups and their trailing dotted wisps from the sky; the tiny sailboat and its immediate reflection near x=320,y=630; and horizontal wave marks in open sea. Keep every cliff, rock, villa, distant island, shoreline and land mark exactly aligned. Open sea should retain its dark purple tone with no ripple marks. Clouds must leave clean dark sky; keep isolated background sky dots outside cloud groups. Preserve full original 1672x941 layout, framing, original colors, tiny crisp disconnected typewriter punctuation marks and original dimensions. No restyling, crop, resizing of subjects, new objects, text, watermark, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in precisely the existing style. Opaque background.",
   "original": "original.png",
-  "status": "prepared; visual alignment pending",
+  "status": "approved",
   "preparation": {
     "canvas": [
       1672,

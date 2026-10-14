@@ -2,7 +2,7 @@
   "tool": "built-in image_gen",
   "prompt": "Use case: precise-object-edit. Asset: clean base plate for layered Ghostty animation. Image 1 is the EDIT TARGET. Remove ONLY the two clouds and their dotted horizontal wisps from the sky; the canoe, paddler, and immediate reflection at x=360,y=735; and isolated horizontal surface-ripple marks in the lake. Preserve ALL mountain, tree, boathouse, shoreline and their vertical reflection marks exactly aligned. The lake retains stationary reflected scenery but no free-floating horizontal ripple strokes. Cloud removal leaves dark sky; retain isolated sky dots outside cloud groups. Preserve full original 1672x941 layout, framing, original colors, tiny crisp disconnected typewriter punctuation marks and original dimensions. No restyling, crop, resizing of subjects, new objects, text, watermark, glow, blur or painted shapes. Change only requested moving elements; reconstruct hidden background in precisely the existing style. Opaque background.",
   "original": "original.png",
-  "status": "prepared; visual alignment pending",
+  "status": "approved",
   "preparation": {
     "canvas": [
       1672,

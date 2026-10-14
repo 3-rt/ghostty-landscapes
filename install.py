@@ -11,59 +11,104 @@ import tempfile
 
 PROJECT = Path(__file__).resolve().parent
 
+def remove(path):
+    if path.is_symlink() or path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+def snapshot(paths, backup):
+    saved = []
+    for index, path in enumerate(paths):
+        copy = backup / str(index)
+        if path.is_symlink():
+            copy.symlink_to(os.readlink(path), target_is_directory=path.is_dir())
+            kind = 'symlink'
+        elif path.is_dir():
+            shutil.copytree(path, copy, symlinks=True)
+            kind = 'directory'
+        elif path.exists():
+            shutil.copy2(path, copy, follow_symlinks=False)
+            kind = 'file'
+        else:
+            kind = 'missing'
+        saved.append((path, copy, kind))
+    return saved
+
+def restore(saved):
+    for path, copy, kind in reversed(saved):
+        remove(path)
+        if kind == 'missing':
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if kind == 'directory':
+            shutil.copytree(copy, path, symlinks=True)
+        elif kind == 'symlink':
+            path.symlink_to(os.readlink(copy), target_is_directory=copy.is_dir())
+        else:
+            shutil.copy2(copy, path, follow_symlinks=False)
+
 def install(config_dir, data_dir, bin_dir, scene):
     build = PROJECT / 'collection/build'
     catalog = json.loads((build / 'catalog.json').read_text())
     if scene not in catalog:
         raise ValueError(f'Unknown scene: {scene}')
-    config_dir.mkdir(parents=True, exist_ok=True)
     library = config_dir / 'backgrounds'
-    library.mkdir(exist_ok=True)
     runtime = data_dir / 'collection'
-    (runtime / 'build').mkdir(parents=True, exist_ok=True)
-    for name in ['index.html', 'gallery.js', 'gallery.css']:
-        shutil.copy2(PROJECT / 'collection' / name, runtime / name)
-    shutil.copy2(build / 'gallery-data.js', runtime / 'build/gallery-data.js')
-    for name, item in catalog.items():
-        for key in ['file', 'preview_file']:
-            shutil.copy2(build / item[key], library / item[key])
-        folder = runtime / 'scenes' / name
-        folder.mkdir(parents=True, exist_ok=True)
-        template = folder / 'scene.template.glsl'
-        shutil.copy2(PROJECT / 'collection/scenes' / name / 'scene.template.glsl', template)
-        item['shader_template'] = str(template)
-        item['preview_path'] = runtime.joinpath('index.html').as_uri() + '?scene=' + name
     config = config_dir / 'config'
-    original_config = config.read_bytes() if config.exists() else None
-    catalog_path = library / 'catalog.json'
-    original_catalog = catalog_path.read_bytes() if catalog_path.exists() else None
-    if original_config is None:
-        config.write_text('background-opacity = 0.8\nbackground-image-opacity = 0.18\nbackground-image-fit = cover\n')
-    fd, candidate = tempfile.mkstemp(prefix='.catalog-', dir=library)
-    try:
-        with os.fdopen(fd, 'w') as output:
-            json.dump(catalog, output, indent=2)
-            output.write('\n')
-        os.replace(candidate, catalog_path)
-        environment = dict(os.environ, GHOST_BG_DIR=str(config_dir), GHOST_BG_DATA_DIR=str(data_dir))
-        result = subprocess.run([sys.executable, str(PROJECT / 'bin/ghost-bg'), 'use', scene], env=environment)
-        if result.returncode:
-            raise RuntimeError('Ghostty rejected the installation')
-    except BaseException:
-        if original_config is None:
-            config.unlink(missing_ok=True)
-        else:
-            config.write_bytes(original_config)
-        if original_catalog is None:
-            catalog_path.unlink(missing_ok=True)
-        else:
-            catalog_path.write_bytes(original_catalog)
-        raise
-    finally:
-        Path(candidate).unlink(missing_ok=True)
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(PROJECT / 'bin/ghost-bg', bin_dir / 'ghost-bg')
-    (bin_dir / 'ghost-bg').chmod(0o755)
+    cli = bin_dir / 'ghost-bg'
+    destinations = [
+        config,
+        config_dir / 'config.before-ghost-bg',
+        config_dir / '.ghost-bg-state.json',
+        library,
+        config_dir / 'shaders',
+        runtime,
+        cli,
+    ]
+    with tempfile.TemporaryDirectory(prefix='ghost-bg-install-') as temporary:
+        stage = Path(temporary) / 'stage'
+        staged_library = stage / 'backgrounds'
+        staged_runtime = stage / 'collection'
+        staged_library.mkdir(parents=True)
+        (staged_runtime / 'build').mkdir(parents=True)
+        for name in ['index.html', 'gallery.js', 'gallery.css']:
+            shutil.copy2(PROJECT / 'collection' / name, staged_runtime / name)
+        shutil.copy2(build / 'gallery-data.js', staged_runtime / 'build/gallery-data.js')
+        for name, item in catalog.items():
+            for key in ['file', 'preview_file']:
+                shutil.copy2(build / item[key], staged_library / item[key])
+            folder = staged_runtime / 'scenes' / name
+            folder.mkdir(parents=True)
+            template = folder / 'scene.template.glsl'
+            shutil.copy2(PROJECT / 'collection/scenes' / name / 'scene.template.glsl', template)
+            item['shader_template'] = str(runtime / 'scenes' / name / 'scene.template.glsl')
+            item['preview_path'] = runtime.joinpath('index.html').as_uri() + '?scene=' + name
+        (staged_library / 'catalog.json').write_text(json.dumps(catalog, indent=2) + '\n')
+        staged_cli = stage / 'ghost-bg'
+        shutil.copy2(PROJECT / 'bin/ghost-bg', staged_cli)
+        staged_cli.chmod(0o755)
+        backup = Path(temporary) / 'backup'
+        backup.mkdir()
+        saved = snapshot(destinations, backup)
+        try:
+            config_dir.mkdir(parents=True, exist_ok=True)
+            if not config.exists():
+                config.write_text('background-opacity = 0.8\nbackground-image-opacity = 0.18\nbackground-image-fit = cover\nbackground-image-position = center\n')
+            library.mkdir(exist_ok=True)
+            shutil.copytree(staged_library, library, dirs_exist_ok=True)
+            remove(runtime)
+            shutil.copytree(staged_runtime, runtime)
+            bin_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(staged_cli, cli)
+            cli.chmod(0o755)
+            environment = dict(os.environ, GHOST_BG_DIR=str(config_dir), GHOST_BG_DATA_DIR=str(data_dir))
+            result = subprocess.run([sys.executable, str(PROJECT / 'bin/ghost-bg'), 'use', scene], env=environment)
+            if result.returncode:
+                raise RuntimeError('Ghostty rejected the installation')
+        except BaseException:
+            restore(saved)
+            raise
     print(f'Installed ten animated scenes. CLI: {bin_dir / "ghost-bg"}')
 
 if __name__ == '__main__':

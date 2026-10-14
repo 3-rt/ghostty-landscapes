@@ -79,8 +79,14 @@ class BackgroundTest(unittest.TestCase):
     def test_off_preserves_other_shader_and_strength(self):
         other = self.root / 'other.glsl'
         other.write_text('void mainImage(out vec4 c,in vec2 p){c=texture(iChannel0,p/iResolution.xy);}')
-        self.config.write_text(self.original + f'custom-shader = {other}\n')
+        original = self.original.replace('background-image-fit = cover', 'background-image-fit = contain')
+        original += f'background-image-position = bottom-right\ncustom-shader-animation = false\ncustom-shader = {other}\n'
+        self.config.write_text(original)
         self.run_cli('use', 'moon')
+        selected = self.config.read_text()
+        self.assertIn('background-image-fit = cover', selected)
+        self.assertIn('background-image-position = center', selected)
+        self.assertIn('custom-shader-animation = true', selected)
         self.run_cli('strength', '12')
         self.run_cli('off')
         text = self.config.read_text()
@@ -88,6 +94,10 @@ class BackgroundTest(unittest.TestCase):
         self.assertNotRegex(text, r'custom-shader = .*/ghost-bg-[a-z]+-[0-9a-f]{12}\.glsl')
         self.assertIn('background-image = \n', text)
         self.assertIn('background-image-opacity = 0.12', text)
+        self.assertIn('background-image-fit = contain', text)
+        self.assertIn('background-image-position = bottom-right', text)
+        self.assertIn('custom-shader-animation = false', text)
+        self.assertFalse((self.root / '.ghost-bg-state.json').exists())
         self.run_cli('use', 'lake')
         self.assertIn('STRENGTH = 0.120000', self.shader().read_text())
 

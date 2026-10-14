@@ -28,6 +28,7 @@ class InstallTest(unittest.TestCase):
         self.assertEqual(len(catalog), 10)
         self.assertTrue(all(item['animated'] for item in catalog.values()))
         self.assertTrue(all(Path(item['shader_template']).is_file() for item in catalog.values()))
+        self.assertTrue(all((self.config / 'backgrounds' / item['preview_file']).is_file() for item in catalog.values()))
         env = dict(os.environ, GHOST_BG_DIR=str(self.config), GHOST_BG_DATA_DIR=str(self.root / 'data'))
         result = subprocess.run([str(self.root / 'bin/ghost-bg'), 'use', 'windmill'], env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -39,8 +40,20 @@ class InstallTest(unittest.TestCase):
         lib.mkdir()
         old = b'{"previous": {"file": "old.png"}}\n'
         (lib / 'catalog.json').write_bytes(old)
+        runtime = self.root / 'data/collection'
+        runtime.mkdir(parents=True)
+        (runtime / 'old.txt').write_text('old runtime')
+        cli = self.root / 'bin/ghost-bg'
+        cli.parent.mkdir()
+        cli.write_text('old cli')
         with patch.object(installer.subprocess, 'run', return_value=subprocess.CompletedProcess([], 1)):
             with self.assertRaises(RuntimeError):
                 installer.install(self.config, self.root / 'data', self.root / 'bin', 'rain')
         self.assertEqual((self.config / 'config').read_bytes(), self.original)
         self.assertEqual((lib / 'catalog.json').read_bytes(), old)
+        self.assertEqual(set(lib.iterdir()), {lib / 'catalog.json'})
+        self.assertEqual((runtime / 'old.txt').read_text(), 'old runtime')
+        self.assertEqual(set(runtime.iterdir()), {runtime / 'old.txt'})
+        self.assertEqual(cli.read_text(), 'old cli')
+        self.assertFalse((self.config / '.ghost-bg-state.json').exists())
+        self.assertFalse((self.config / 'shaders').exists())
